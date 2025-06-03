@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export const Header = ({ onMenuClick }: HeaderProps) => {
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
       <div className="flex items-center space-x-4">
         <Button
           variant="ghost"
@@ -22,10 +22,10 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         </Button>
         
         <div className="relative w-96 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar números, projetos..."
-            className="pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+            className="pl-10 bg-muted/50 border-input focus:bg-background"
           />
         </div>
       </div>
