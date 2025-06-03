@@ -14,15 +14,32 @@ import {
   Activity,
   Clock,
   Edit,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { AddNumberModal } from './AddNumberModal';
+import { EditNumberModal } from './EditNumberModal';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { NumberDetailsModal } from './NumberDetailsModal';
 
 export const Numeros = () => {
   const [activeFilter, setActiveFilter] = useState('Todos');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState<any>(null);
   
   const filters = ['Todos', 'Ativo', 'Inativo', 'Banido', 'API', 'Aquecendo'];
   
-  const numbers = [
+  const [numbers, setNumbers] = useState([
     {
       id: 1,
       number: "+55 11 99999-0001",
@@ -73,69 +90,104 @@ export const Numeros = () => {
       lastActivity: "1d",
       messages: 892
     }
-  ];
+  ]);
 
   const getStatusInfo = (status: string) => {
     switch (status) {
       case "Ativo": 
         return { 
-          color: "bg-green-100 text-green-800", 
+          color: "bg-green-500/20 text-green-400 border border-green-500/30", 
           icon: Phone,
-          iconColor: "text-green-600"
+          iconColor: "text-green-400"
         };
       case "API": 
         return { 
-          color: "bg-blue-100 text-blue-800", 
+          color: "bg-blue-500/20 text-blue-400 border border-blue-500/30", 
           icon: Activity,
-          iconColor: "text-blue-600"
+          iconColor: "text-blue-400"
         };
       case "Aquecendo": 
         return { 
-          color: "bg-yellow-100 text-yellow-800", 
+          color: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30", 
           icon: Clock,
-          iconColor: "text-yellow-600"
+          iconColor: "text-yellow-400"
         };
       case "Banido": 
         return { 
-          color: "bg-red-100 text-red-800", 
+          color: "bg-red-500/20 text-red-400 border border-red-500/30", 
           icon: PhoneOff,
-          iconColor: "text-red-600"
+          iconColor: "text-red-400"
         };
       case "Inativo": 
         return { 
-          color: "bg-gray-100 text-gray-800", 
+          color: "bg-gray-500/20 text-gray-400 border border-gray-500/30", 
           icon: PhoneOff,
-          iconColor: "text-gray-600"
+          iconColor: "text-gray-400"
         };
       default: 
         return { 
-          color: "bg-gray-100 text-gray-800", 
+          color: "bg-gray-500/20 text-gray-400 border border-gray-500/30", 
           icon: Phone,
-          iconColor: "text-gray-600"
+          iconColor: "text-gray-400"
         };
     }
   };
 
-  const filteredNumbers = activeFilter === 'Todos' 
-    ? numbers 
-    : numbers.filter(num => num.status === activeFilter);
+  const filteredNumbers = numbers.filter(num => {
+    const matchesFilter = activeFilter === 'Todos' || num.status === activeFilter;
+    const matchesSearch = searchTerm === '' || 
+      num.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      num.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      num.responsible.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  const handleAddNumber = (newNumber: any) => {
+    setNumbers(prev => [...prev, newNumber]);
+  };
+
+  const handleEditNumber = (id: number, updatedNumber: any) => {
+    setNumbers(prev => prev.map(num => num.id === id ? updatedNumber : num));
+  };
+
+  const handleDeleteNumber = (id: number) => {
+    setNumbers(prev => prev.filter(num => num.id !== id));
+  };
+
+  const openEditModal = (number: any) => {
+    setSelectedNumber(number);
+    setIsEditModalOpen(true);
+  };
+
+  const openDeleteModal = (number: any) => {
+    setSelectedNumber(number);
+    setIsDeleteModalOpen(true);
+  };
+
+  const openDetailsModal = (number: any) => {
+    setSelectedNumber(number);
+    setIsDetailsModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Números WhatsApp</h1>
-          <p className="text-gray-600">Gerencie todos os números da sua operação</p>
+          <h1 className="text-2xl font-bold text-foreground">Números WhatsApp</h1>
+          <p className="text-muted-foreground">Gerencie todos os números da sua operação</p>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700">
+        <Button 
+          className="bg-green-600 hover:bg-green-700"
+          onClick={() => setIsAddModalOpen(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Número
         </Button>
       </div>
 
       {/* Filters and Search */}
-      <Card>
+      <Card className="border-border bg-card">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div className="flex flex-wrap gap-2">
@@ -154,10 +206,12 @@ export const Numeros = () => {
             
             <div className="flex items-center space-x-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar número..."
                   className="pl-10 w-64"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <Button variant="outline" size="icon">
@@ -169,10 +223,10 @@ export const Numeros = () => {
       </Card>
 
       {/* Numbers Table */}
-      <Card>
+      <Card className="border-border bg-card">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Lista de Números ({filteredNumbers.length})</span>
+            <span className="text-foreground">Lista de Números ({filteredNumbers.length})</span>
             <Badge variant="secondary">{filteredNumbers.length} de {numbers.length}</Badge>
           </CardTitle>
         </CardHeader>
@@ -180,15 +234,15 @@ export const Numeros = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Número</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Projeto</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Responsável</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Dispositivo</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Mensagens</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Última Atividade</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Ações</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Número</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Projeto</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Responsável</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Dispositivo</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Mensagens</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Última Atividade</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -197,13 +251,13 @@ export const Numeros = () => {
                   const StatusIcon = statusInfo.icon;
                   
                   return (
-                    <tr key={number.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <tr key={number.id} className="border-b border-border hover:bg-muted/50">
                       <td className="py-4 px-4">
                         <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-lg bg-gray-100`}>
-                            <Phone className="h-4 w-4 text-gray-600" />
+                          <div className="p-2 rounded-lg bg-muted">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
                           </div>
-                          <span className="font-medium text-gray-900">{number.number}</span>
+                          <span className="font-medium text-foreground">{number.number}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4">
@@ -212,22 +266,55 @@ export const Numeros = () => {
                           <Badge className={statusInfo.color}>{number.status}</Badge>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-gray-900">{number.project}</td>
-                      <td className="py-4 px-4 text-gray-900">{number.responsible}</td>
-                      <td className="py-4 px-4 text-gray-600">{number.device}</td>
-                      <td className="py-4 px-4 text-gray-900 font-medium">{number.messages.toLocaleString()}</td>
-                      <td className="py-4 px-4 text-gray-600">{number.lastActivity}</td>
+                      <td className="py-4 px-4 text-foreground">{number.project}</td>
+                      <td className="py-4 px-4 text-foreground">{number.responsible}</td>
+                      <td className="py-4 px-4 text-muted-foreground">{number.device}</td>
+                      <td className="py-4 px-4 text-foreground font-medium">{number.messages.toLocaleString()}</td>
+                      <td className="py-4 px-4 text-muted-foreground">{number.lastActivity}</td>
                       <td className="py-4 px-4">
                         <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openDetailsModal(number)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openEditModal(number)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openDeleteModal(number)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => openDetailsModal(number)}>
+                                Ver Detalhes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditModal(number)}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => openDeleteModal(number)}
+                                className="text-red-600"
+                              >
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>
@@ -238,6 +325,33 @@ export const Numeros = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <AddNumberModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddNumber={handleAddNumber}
+      />
+
+      <EditNumberModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onEditNumber={handleEditNumber}
+        number={selectedNumber}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => selectedNumber && handleDeleteNumber(selectedNumber.id)}
+        numberToDelete={selectedNumber?.number || ''}
+      />
+
+      <NumberDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        number={selectedNumber}
+      />
     </div>
   );
 };
