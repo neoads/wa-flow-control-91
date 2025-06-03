@@ -21,8 +21,8 @@ export const Dashboard = () => {
       change: "+12%",
       trend: "up",
       icon: Phone,
-      color: "text-green-600",
-      bgColor: "bg-green-50"
+      color: "text-green-400",
+      bgColor: "bg-green-500/10"
     },
     {
       title: "Com API Conectada",
@@ -30,8 +30,8 @@ export const Dashboard = () => {
       change: "+8%",
       trend: "up",
       icon: Activity,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/10"
     },
     {
       title: "Banidos",
@@ -39,8 +39,8 @@ export const Dashboard = () => {
       change: "-3%",
       trend: "down",
       icon: PhoneOff,
-      color: "text-red-600",
-      bgColor: "bg-red-50"
+      color: "text-red-400",
+      bgColor: "bg-red-500/10"
     },
     {
       title: "Aguardando",
@@ -48,8 +48,8 @@ export const Dashboard = () => {
       change: "+5%",
       trend: "up",
       icon: Clock,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50"
+      color: "text-yellow-400",
+      bgColor: "bg-yellow-500/10"
     }
   ];
 
@@ -62,11 +62,11 @@ export const Dashboard = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Ativo": return "bg-green-100 text-green-800";
-      case "API": return "bg-blue-100 text-blue-800";
-      case "Aquecendo": return "bg-yellow-100 text-yellow-800";
-      case "Banido": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Ativo": return "bg-green-500/20 text-green-400 border border-green-500/30";
+      case "API": return "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+      case "Aquecendo": return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
+      case "Banido": return "bg-red-500/20 text-red-400 border border-red-500/30";
+      default: return "bg-gray-500/20 text-gray-400 border border-gray-500/30";
     }
   };
 
@@ -75,10 +75,10 @@ export const Dashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Visão geral da sua operação WhatsApp</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Visão geral da sua operação WhatsApp</p>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700">
+        <Button className="bg-green-600 hover:bg-green-700 text-white">
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Número
         </Button>
@@ -89,22 +89,22 @@ export const Dashboard = () => {
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <Card key={kpi.title} className="hover:shadow-md transition-shadow">
+            <Card key={kpi.title} className="hover:shadow-lg transition-shadow border-border bg-card">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className={`p-3 rounded-lg ${kpi.bgColor}`}>
                     <Icon className={`h-6 w-6 ${kpi.color}`} />
                   </div>
                   <div className="flex items-center space-x-1 text-sm">
-                    <TrendingUp className={`h-3 w-3 ${kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className={kpi.trend === 'up' ? 'text-green-600' : 'text-red-600'}>
+                    <TrendingUp className={`h-3 w-3 ${kpi.trend === 'up' ? 'text-green-400' : 'text-red-400'}`} />
+                    <span className={kpi.trend === 'up' ? 'text-green-400' : 'text-red-400'}>
                       {kpi.change}
                     </span>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <h3 className="text-2xl font-bold text-gray-900">{kpi.value}</h3>
-                  <p className="text-sm text-gray-600">{kpi.title}</p>
+                  <h3 className="text-2xl font-bold text-foreground">{kpi.value}</h3>
+                  <p className="text-sm text-muted-foreground">{kpi.title}</p>
                 </div>
               </CardContent>
             </Card>
@@ -114,49 +114,49 @@ export const Dashboard = () => {
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-lg">Últimos Números Adicionados</CardTitle>
+            <CardTitle className="text-lg text-foreground">Últimos Números Adicionados</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {recentNumbers.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
-                      <span className="font-medium text-gray-900">{item.number}</span>
+                      <span className="font-medium text-foreground">{item.number}</span>
                       <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
                     </div>
-                    <div className="mt-1 text-sm text-gray-600">
+                    <div className="mt-1 text-sm text-muted-foreground">
                       {item.project} • {item.user}
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400">{item.time}</span>
+                  <span className="text-xs text-muted-foreground">{item.time}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-lg">Alertas e Notificações</CardTitle>
+            <CardTitle className="text-lg text-foreground">Alertas e Notificações</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div className="flex items-start space-x-3 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
                 <div>
-                  <p className="font-medium text-yellow-800">3 números próximos ao limite</p>
-                  <p className="text-sm text-yellow-700">Verifique a API dos números que estão com alto volume</p>
+                  <p className="font-medium text-yellow-300">3 números próximos ao limite</p>
+                  <p className="text-sm text-yellow-400/80">Verifique a API dos números que estão com alto volume</p>
                 </div>
               </div>
               
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <Activity className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="flex items-start space-x-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                <Activity className="h-5 w-5 text-blue-400 mt-0.5" />
                 <div>
-                  <p className="font-medium text-blue-800">Aquecimento concluído</p>
-                  <p className="text-sm text-blue-700">5 números estão prontos para uso</p>
+                  <p className="font-medium text-blue-300">Aquecimento concluído</p>
+                  <p className="text-sm text-blue-400/80">5 números estão prontos para uso</p>
                 </div>
               </div>
             </div>
