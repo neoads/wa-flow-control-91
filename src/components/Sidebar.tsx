@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -8,7 +7,6 @@ import {
   Users, 
   Shield, 
   Activity, 
-  Link as LinkIcon,
   Menu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -49,12 +47,6 @@ const menuItems = [
     icon: Activity,
     href: "/aquecimento",
     description: "Preparar números"
-  },
-  {
-    title: "Links de Grupos",
-    icon: LinkIcon,
-    href: "/links",
-    description: "Gestão de grupos"
   }
 ];
 

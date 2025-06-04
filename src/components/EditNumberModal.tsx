@@ -25,9 +25,18 @@ interface EditNumberModalProps {
   onClose: () => void;
   onEditNumber: (id: number, numberData: any) => void;
   number: any;
+  projects?: Array<{id: number, name: string}>;
+  users?: Array<{id: number, name: string}>;
 }
 
-export const EditNumberModal = ({ isOpen, onClose, onEditNumber, number }: EditNumberModalProps) => {
+export const EditNumberModal = ({ 
+  isOpen, 
+  onClose, 
+  onEditNumber, 
+  number,
+  projects = [],
+  users = []
+}: EditNumberModalProps) => {
   const [formData, setFormData] = useState({
     number: '',
     project: '',
@@ -52,10 +61,20 @@ export const EditNumberModal = ({ isOpen, onClose, onEditNumber, number }: EditN
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.number || !formData.project || !formData.responsible) {
+    if (!formData.number || !formData.project || !formData.responsible || !formData.device) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação do número
+    if (!formData.number.startsWith('+55')) {
+      toast({
+        title: "Erro",
+        description: "O número deve começar com +55.",
         variant: "destructive",
       });
       return;
@@ -67,7 +86,7 @@ export const EditNumberModal = ({ isOpen, onClose, onEditNumber, number }: EditN
       status: formData.status,
       project: formData.project,
       responsible: formData.responsible,
-      device: formData.device || 'Não informado'
+      device: formData.device
     });
     
     toast({
@@ -106,35 +125,47 @@ export const EditNumberModal = ({ isOpen, onClose, onEditNumber, number }: EditN
 
           <div className="space-y-2">
             <Label htmlFor="project">Projeto *</Label>
-            <Input
-              id="project"
-              placeholder="Nome do projeto"
-              value={formData.project}
-              onChange={(e) => handleInputChange('project', e.target.value)}
-              className="w-full"
-            />
+            <Select value={formData.project} onValueChange={(value) => handleInputChange('project', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um projeto" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.name}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="responsible">Responsável *</Label>
-            <Input
-              id="responsible"
-              placeholder="Nome do responsável"
-              value={formData.responsible}
-              onChange={(e) => handleInputChange('responsible', e.target.value)}
-              className="w-full"
-            />
+            <Select value={formData.responsible} onValueChange={(value) => handleInputChange('responsible', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.name}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="device">Dispositivo</Label>
-            <Input
-              id="device"
-              placeholder="iPhone 14, Android S23, etc."
-              value={formData.device}
-              onChange={(e) => handleInputChange('device', e.target.value)}
-              className="w-full"
-            />
+            <Label htmlFor="device">Dispositivo *</Label>
+            <Select value={formData.device} onValueChange={(value) => handleInputChange('device', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o dispositivo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Celular">Celular</SelectItem>
+                <SelectItem value="Emulador">Emulador</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -148,7 +179,7 @@ export const EditNumberModal = ({ isOpen, onClose, onEditNumber, number }: EditN
                 <SelectItem value="API">API</SelectItem>
                 <SelectItem value="Aquecendo">Aquecendo</SelectItem>
                 <SelectItem value="Inativo">Inativo</SelectItem>
-                <SelectItem value="Banido">Banido</SelectItem>
+                <SelectItem value="Suspenso">Suspenso</SelectItem>
               </SelectContent>
             </Select>
           </div>

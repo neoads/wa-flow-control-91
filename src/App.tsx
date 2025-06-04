@@ -30,7 +30,6 @@ const App: React.FC = () => (
             <Route path="/usuarios" element={<Usuarios />} />
             <Route path="/seguranca" element={<Seguranca />} />
             <Route path="/aquecimento" element={<Aquecimento />} />
-            <Route path="/links" element={<div className="p-8 text-center text-gray-500">Módulo Links de Grupos em construção</div>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

@@ -12,24 +12,31 @@ import {
   Link as LinkIcon,
   Trash2,
   Edit,
-  Flame
+  Flame,
+  Copy,
+  Check
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 export const Aquecimento = () => {
   const [numbersText, setNumbersText] = useState('');
   const [groupsText, setGroupsText] = useState('');
+  const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
+  const { toast } = useToast();
   
   const [warmupNumbers, setWarmupNumbers] = useState([
     {
       id: 1,
       number: "+5511912345678",
-      description: "Número de teste da campanha X"
+      description: "Número de teste da campanha X",
+      url: "https://wa.me/5511912345678"
     },
     {
       id: 2,
       number: "+5562998765432",
-      description: "Aquece de novo lote VIP"
+      description: "Aquece de novo lote VIP",
+      url: "https://wa.me/5562998765432"
     }
   ]);
 
@@ -46,6 +53,29 @@ export const Aquecimento = () => {
     }
   ]);
 
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedStates(prev => ({ ...prev, [id]: true }));
+      
+      toast({
+        title: "Copiado!",
+        description: "Número copiado para área de transferência.",
+      });
+
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [id]: false }));
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o número.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSaveNumbers = () => {
     if (!numbersText.trim()) return;
 
@@ -55,15 +85,37 @@ export const Aquecimento = () => {
       const number = parts[0]?.trim();
       const description = parts[1]?.trim() || '';
       
+      // Remove +55 from number for URL generation
+      const urlNumber = number?.replace('+', '');
+      
       return {
         id: Date.now() + index,
         number,
-        description
+        description,
+        url: `https://wa.me/${urlNumber}`
       };
     }).filter(item => item.number && item.number.startsWith('+55'));
 
-    setWarmupNumbers(prev => [...prev, ...newNumbers]);
+    // Check for duplicates
+    const existingNumbers = warmupNumbers.map(n => n.number);
+    const uniqueNumbers = newNumbers.filter(n => !existingNumbers.includes(n.number));
+
+    if (uniqueNumbers.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Todos os números já estão cadastrados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWarmupNumbers(prev => [...prev, ...uniqueNumbers]);
     setNumbersText('');
+    
+    toast({
+      title: "Sucesso!",
+      description: `${uniqueNumbers.length} números de aquecimento salvos.`,
+    });
   };
 
   const handleSaveGroups = () => {
@@ -82,16 +134,42 @@ export const Aquecimento = () => {
       };
     }).filter(item => item.name && item.url && item.url.includes('chat.whatsapp.com'));
 
-    setWarmupGroups(prev => [...prev, ...newGroups]);
+    // Check for duplicates
+    const existingUrls = warmupGroups.map(g => g.url);
+    const uniqueGroups = newGroups.filter(g => !existingUrls.includes(g.url));
+
+    if (uniqueGroups.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Todos os grupos já estão cadastrados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWarmupGroups(prev => [...prev, ...uniqueGroups]);
     setGroupsText('');
+    
+    toast({
+      title: "Sucesso!",
+      description: `${uniqueGroups.length} grupos salvos.`,
+    });
   };
 
   const deleteNumber = (id: number) => {
     setWarmupNumbers(prev => prev.filter(num => num.id !== id));
+    toast({
+      title: "Removido",
+      description: "Número de aquecimento removido.",
+    });
   };
 
   const deleteGroup = (id: number) => {
     setWarmupGroups(prev => prev.filter(group => group.id !== id));
+    toast({
+      title: "Removido",
+      description: "Grupo removido.",
+    });
   };
 
   return (
@@ -163,6 +241,7 @@ export const Aquecimento = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Copiar</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Número</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Descrição</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ações</th>
@@ -172,11 +251,28 @@ export const Aquecimento = () => {
                     {warmupNumbers.map((number) => (
                       <tr key={number.id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(number.number, `number-${number.id}`)}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            {copiedStates[`number-${number.id}`] ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Phone className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </td>
+                        <td className="py-4 px-4">
                           <div className="flex items-center space-x-3">
                             <div className="p-2 rounded-lg bg-green-500/20">
                               <Phone className="h-4 w-4 text-green-400" />
                             </div>
-                            <span className="font-medium text-foreground">{number.number}</span>
+                            <div>
+                              <span className="font-medium text-foreground">{number.number}</span>
+                              <p className="text-xs text-muted-foreground">{number.url}</p>
+                            </div>
                           </div>
                         </td>
                         <td className="py-4 px-4 text-foreground">{number.description}</td>

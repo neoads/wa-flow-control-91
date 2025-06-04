@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,8 @@ import {
   Clock,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,7 +38,24 @@ export const Numeros = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<any>(null);
   
-  const filters = ['Todos', 'Ativo', 'Inativo', 'Banido', 'API', 'Aquecendo'];
+  const filters = ['Todos', 'Ativo', 'Inativo', 'Suspenso', 'API', 'Aquecendo'];
+  
+  // Mock data para projetos e usuários (em um app real, isso viria de contexto/API)
+  const mockProjects = [
+    { id: 1, name: "Projeto Alpha" },
+    { id: 2, name: "Projeto Beta" },
+    { id: 3, name: "Projeto Gamma" },
+    { id: 4, name: "Projeto Delta" },
+    { id: 5, name: "Projeto Epsilon" }
+  ];
+
+  const mockUsers = [
+    { id: 1, name: "João Silva" },
+    { id: 2, name: "Maria Santos" },
+    { id: 3, name: "Pedro Costa" },
+    { id: 4, name: "Ana Oliveira" },
+    { id: 5, name: "Carlos Lima" }
+  ];
   
   // Mock data com projetos e responsáveis atualizados
   const [numbers, setNumbers] = useState([
@@ -46,7 +65,7 @@ export const Numeros = () => {
       status: "Ativo",
       project: "Projeto Alpha",
       responsible: "João Silva",
-      device: "iPhone 12",
+      device: "Celular",
       lastActivity: "2h",
       messages: 1247
     },
@@ -56,7 +75,7 @@ export const Numeros = () => {
       status: "API",
       project: "Projeto Beta",
       responsible: "Maria Santos",
-      device: "Android S21",
+      device: "Emulador",
       lastActivity: "5min",
       messages: 3421
     },
@@ -66,17 +85,17 @@ export const Numeros = () => {
       status: "Aquecendo",
       project: "Projeto Gamma",
       responsible: "Pedro Costa",
-      device: "iPhone 13",
+      device: "Celular",
       lastActivity: "1h",
       messages: 45
     },
     {
       id: 4,
       number: "+55 11 99999-0004",
-      status: "Banido",
+      status: "Suspenso",
       project: "Projeto Delta",
       responsible: "Ana Oliveira",
-      device: "Android Pixel",
+      device: "Emulador",
       lastActivity: "2d",
       messages: 0
     },
@@ -86,7 +105,7 @@ export const Numeros = () => {
       status: "Inativo",
       project: "Projeto Epsilon",
       responsible: "Carlos Lima",
-      device: "iPhone 14",
+      device: "Celular",
       lastActivity: "1d",
       messages: 892
     }
@@ -112,11 +131,11 @@ export const Numeros = () => {
           icon: Clock,
           iconColor: "text-yellow-400"
         };
-      case "Banido": 
+      case "Suspenso": 
         return { 
-          color: "bg-red-500/20 text-red-400 border border-red-500/30", 
-          icon: PhoneOff,
-          iconColor: "text-red-400"
+          color: "bg-orange-500/20 text-orange-400 border border-orange-500/30", 
+          icon: AlertTriangle,
+          iconColor: "text-orange-400"
         };
       case "Inativo": 
         return { 
@@ -331,6 +350,8 @@ export const Numeros = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddNumber={handleAddNumber}
+        projects={mockProjects}
+        users={mockUsers}
       />
 
       <EditNumberModal
@@ -338,6 +359,8 @@ export const Numeros = () => {
         onClose={() => setIsEditModalOpen(false)}
         onEditNumber={handleEditNumber}
         number={selectedNumber}
+        projects={mockProjects}
+        users={mockUsers}
       />
 
       <DeleteConfirmModal
