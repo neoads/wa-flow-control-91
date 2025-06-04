@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +38,7 @@ export const Numeros = () => {
   
   const filters = ['Todos', 'Ativo', 'Inativo', 'Banido', 'API', 'Aquecendo'];
   
+  // Mock data com projetos e responsáveis atualizados
   const [numbers, setNumbers] = useState([
     {
       id: 1,
