@@ -18,80 +18,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { useApp } from '@/contexts/AppContext';
+import type { Project, Responsible, WhatsNumber } from '@/contexts/AppContext';
 
 interface EditNumberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onEditNumber: (id: number, numberData: any) => void;
-  number: any;
-  projects?: Array<{id: number, name: string}>;
-  users?: Array<{id: number, name: string}>;
+  number: WhatsNumber | null;
+  projects: Project[];
+  users: Responsible[];
 }
 
 export const EditNumberModal = ({ 
   isOpen, 
   onClose, 
-  onEditNumber, 
   number,
   projects = [],
   users = []
 }: EditNumberModalProps) => {
+  const { updateNumber } = useApp();
   const [formData, setFormData] = useState({
     number: '',
-    project: '',
-    responsible: '',
+    project_id: '',
+    responsible_id: '',
     device: '',
-    status: 'Ativo'
+    status: 'Ativo',
+    url: ''
   });
-  const { toast } = useToast();
 
   useEffect(() => {
     if (number) {
       setFormData({
         number: number.number || '',
-        project: number.project || '',
-        responsible: number.responsible || '',
+        project_id: number.project_id || '',
+        responsible_id: number.responsible_id || '',
         device: number.device || '',
-        status: number.status || 'Ativo'
+        status: number.status || 'Ativo',
+        url: number.url || ''
       });
     }
   }, [number]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.number || !formData.project || !formData.responsible || !formData.device) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
+    if (!formData.number || !formData.project_id || !formData.responsible_id || !formData.device) {
       return;
     }
 
-    // Validação do número
-    if (!formData.number.startsWith('+55')) {
-      toast({
-        title: "Erro",
-        description: "O número deve começar com +55.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!number) return;
 
-    onEditNumber(number.id, {
-      ...number,
+    await updateNumber(number.id, {
       number: formData.number,
+      project_id: formData.project_id,
+      responsible_id: formData.responsible_id,
+      device: formData.device,
       status: formData.status,
-      project: formData.project,
-      responsible: formData.responsible,
-      device: formData.device
-    });
-    
-    toast({
-      title: "Sucesso!",
-      description: "Número atualizado com sucesso.",
+      url: formData.url || `https://web.whatsapp.com/send?phone=${formData.number}`
     });
 
     onClose();
@@ -125,13 +108,13 @@ export const EditNumberModal = ({
 
           <div className="space-y-2">
             <Label htmlFor="project">Projeto *</Label>
-            <Select value={formData.project} onValueChange={(value) => handleInputChange('project', value)}>
+            <Select value={formData.project_id} onValueChange={(value) => handleInputChange('project_id', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um projeto" />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.name}>
+                  <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>
                 ))}
@@ -141,13 +124,13 @@ export const EditNumberModal = ({
 
           <div className="space-y-2">
             <Label htmlFor="responsible">Responsável *</Label>
-            <Select value={formData.responsible} onValueChange={(value) => handleInputChange('responsible', value)}>
+            <Select value={formData.responsible_id} onValueChange={(value) => handleInputChange('responsible_id', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
                 {users.map((user) => (
-                  <SelectItem key={user.id} value={user.name}>
+                  <SelectItem key={user.id} value={user.id}>
                     {user.name}
                   </SelectItem>
                 ))}
