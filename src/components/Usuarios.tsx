@@ -14,52 +14,19 @@ import {
 import { AddUserModal } from './AddUserModal';
 import { EditUserModal } from './EditUserModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { useApp } from '@/contexts/AppContext';
 
 export const Usuarios = () => {
+  const { responsibles } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "João Silva"
-    },
-    {
-      id: 2,
-      name: "Maria Santos"
-    },
-    {
-      id: 3,
-      name: "Pedro Costa"
-    },
-    {
-      id: 4,
-      name: "Ana Oliveira"
-    },
-    {
-      id: 5,
-      name: "Carlos Lima"
-    }
-  ]);
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = responsibles.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleAddUser = (newUser: any) => {
-    setUsers(prev => [...prev, newUser]);
-  };
-
-  const handleEditUser = (id: number, updatedUser: any) => {
-    setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
-  };
-
-  const handleDeleteUser = (id: number) => {
-    setUsers(prev => prev.filter(user => user.id !== id));
-  };
 
   const openEditModal = (user: any) => {
     setSelectedUser(user);
@@ -113,7 +80,7 @@ export const Usuarios = () => {
               <Users className="h-5 w-5 mr-2" />
               Lista de Usuários ({filteredUsers.length})
             </span>
-            <Badge variant="secondary">{filteredUsers.length} de {users.length}</Badge>
+            <Badge variant="secondary">{filteredUsers.length} de {responsibles.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -167,20 +134,19 @@ export const Usuarios = () => {
       <AddUserModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAddUser={handleAddUser}
       />
 
       <EditUserModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onEditUser={handleEditUser}
+        onEditUser={(id, updatedUser) => console.log('Edit user:', id, updatedUser)}
         user={selectedUser}
       />
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={() => selectedUser && handleDeleteUser(selectedUser.id)}
+        onConfirm={() => selectedUser && console.log('Delete user:', selectedUser.id)}
         numberToDelete={selectedUser?.name || ''}
       />
     </div>

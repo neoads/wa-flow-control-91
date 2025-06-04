@@ -14,58 +14,20 @@ import {
 import { AddProjectModal } from './AddProjectModal';
 import { EditProjectModal } from './EditProjectModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { useApp } from '@/contexts/AppContext';
 
 export const Projetos = () => {
+  const { projects } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: "Projeto Alpha",
-      description: "Projeto principal de vendas do trimestre"
-    },
-    {
-      id: 2,
-      name: "Projeto Beta",
-      description: "Campanha de remarketing para leads qualificados"
-    },
-    {
-      id: 3,
-      name: "Projeto Gamma",
-      description: "Lançamento do novo produto premium"
-    },
-    {
-      id: 4,
-      name: "Projeto Delta",
-      description: "Campanha Black November 2024"
-    },
-    {
-      id: 5,
-      name: "Projeto Epsilon",
-      description: "Reativação de clientes inativos"
-    }
-  ]);
 
   const filteredProjects = projects.filter(project => 
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  const handleAddProject = (newProject: any) => {
-    setProjects(prev => [...prev, newProject]);
-  };
-
-  const handleEditProject = (id: number, updatedProject: any) => {
-    setProjects(prev => prev.map(project => project.id === id ? updatedProject : project));
-  };
-
-  const handleDeleteProject = (id: number) => {
-    setProjects(prev => prev.filter(project => project.id !== id));
-  };
 
   const openEditModal = (project: any) => {
     setSelectedProject(project);
@@ -144,10 +106,10 @@ export const Projetos = () => {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <span className="text-foreground" title={project.description}>
-                        {project.description.length > 50 
+                      <span className="text-foreground" title={project.description || ''}>
+                        {project.description && project.description.length > 50 
                           ? `${project.description.substring(0, 50)}...` 
-                          : project.description
+                          : project.description || 'Sem descrição'
                         }
                       </span>
                     </td>
@@ -182,20 +144,19 @@ export const Projetos = () => {
       <AddProjectModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAddProject={handleAddProject}
       />
 
       <EditProjectModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onEditProject={handleEditProject}
+        onEditProject={(id, updatedProject) => console.log('Edit project:', id, updatedProject)}
         project={selectedProject}
       />
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={() => selectedProject && handleDeleteProject(selectedProject.id)}
+        onConfirm={() => selectedProject && console.log('Delete project:', selectedProject.id)}
         numberToDelete={selectedProject?.name || ''}
       />
     </div>

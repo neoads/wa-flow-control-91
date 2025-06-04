@@ -28,8 +28,10 @@ import { AddNumberModal } from './AddNumberModal';
 import { EditNumberModal } from './EditNumberModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { NumberDetailsModal } from './NumberDetailsModal';
+import { useApp } from '@/contexts/AppContext';
 
 export const Numeros = () => {
+  const { numbers, projects, responsibles } = useApp();
   const [activeFilter, setActiveFilter] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -39,77 +41,6 @@ export const Numeros = () => {
   const [selectedNumber, setSelectedNumber] = useState<any>(null);
   
   const filters = ['Todos', 'Ativo', 'Inativo', 'Suspenso', 'API', 'Aquecendo'];
-  
-  // Mock data para projetos e usuários (em um app real, isso viria de contexto/API)
-  const mockProjects = [
-    { id: 1, name: "Projeto Alpha" },
-    { id: 2, name: "Projeto Beta" },
-    { id: 3, name: "Projeto Gamma" },
-    { id: 4, name: "Projeto Delta" },
-    { id: 5, name: "Projeto Epsilon" }
-  ];
-
-  const mockUsers = [
-    { id: 1, name: "João Silva" },
-    { id: 2, name: "Maria Santos" },
-    { id: 3, name: "Pedro Costa" },
-    { id: 4, name: "Ana Oliveira" },
-    { id: 5, name: "Carlos Lima" }
-  ];
-  
-  // Mock data com projetos e responsáveis atualizados
-  const [numbers, setNumbers] = useState([
-    {
-      id: 1,
-      number: "+55 11 99999-0001",
-      status: "Ativo",
-      project: "Projeto Alpha",
-      responsible: "João Silva",
-      device: "Celular",
-      lastActivity: "2h",
-      messages: 1247
-    },
-    {
-      id: 2,
-      number: "+55 11 99999-0002",
-      status: "API",
-      project: "Projeto Beta",
-      responsible: "Maria Santos",
-      device: "Emulador",
-      lastActivity: "5min",
-      messages: 3421
-    },
-    {
-      id: 3,
-      number: "+55 11 99999-0003",
-      status: "Aquecendo",
-      project: "Projeto Gamma",
-      responsible: "Pedro Costa",
-      device: "Celular",
-      lastActivity: "1h",
-      messages: 45
-    },
-    {
-      id: 4,
-      number: "+55 11 99999-0004",
-      status: "Suspenso",
-      project: "Projeto Delta",
-      responsible: "Ana Oliveira",
-      device: "Emulador",
-      lastActivity: "2d",
-      messages: 0
-    },
-    {
-      id: 5,
-      number: "+55 11 99999-0005",
-      status: "Inativo",
-      project: "Projeto Epsilon",
-      responsible: "Carlos Lima",
-      device: "Celular",
-      lastActivity: "1d",
-      messages: 892
-    }
-  ]);
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -152,26 +83,24 @@ export const Numeros = () => {
     }
   };
 
+  const getProjectName = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    return project?.name || 'Projeto não encontrado';
+  };
+
+  const getResponsibleName = (responsibleId: string) => {
+    const responsible = responsibles.find(r => r.id === responsibleId);
+    return responsible?.name || 'Responsável não encontrado';
+  };
+
   const filteredNumbers = numbers.filter(num => {
     const matchesFilter = activeFilter === 'Todos' || num.status === activeFilter;
     const matchesSearch = searchTerm === '' || 
       num.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      num.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      num.responsible.toLowerCase().includes(searchTerm.toLowerCase());
+      getProjectName(num.project_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getResponsibleName(num.responsible_id).toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
-
-  const handleAddNumber = (newNumber: any) => {
-    setNumbers(prev => [...prev, newNumber]);
-  };
-
-  const handleEditNumber = (id: number, updatedNumber: any) => {
-    setNumbers(prev => prev.map(num => num.id === id ? updatedNumber : num));
-  };
-
-  const handleDeleteNumber = (id: number) => {
-    setNumbers(prev => prev.filter(num => num.id !== id));
-  };
 
   const openEditModal = (number: any) => {
     setSelectedNumber(number);
@@ -285,11 +214,11 @@ export const Numeros = () => {
                           <Badge className={statusInfo.color}>{number.status}</Badge>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-foreground">{number.project}</td>
-                      <td className="py-4 px-4 text-foreground">{number.responsible}</td>
+                      <td className="py-4 px-4 text-foreground">{getProjectName(number.project_id)}</td>
+                      <td className="py-4 px-4 text-foreground">{getResponsibleName(number.responsible_id)}</td>
                       <td className="py-4 px-4 text-muted-foreground">{number.device}</td>
-                      <td className="py-4 px-4 text-foreground font-medium">{number.messages.toLocaleString()}</td>
-                      <td className="py-4 px-4 text-muted-foreground">{number.lastActivity}</td>
+                      <td className="py-4 px-4 text-foreground font-medium">{number.messages?.toLocaleString() || 0}</td>
+                      <td className="py-4 px-4 text-muted-foreground">{number.last_activity || 'Agora'}</td>
                       <td className="py-4 px-4">
                         <div className="flex items-center space-x-2">
                           <Button 
@@ -349,24 +278,20 @@ export const Numeros = () => {
       <AddNumberModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAddNumber={handleAddNumber}
-        projects={mockProjects}
-        users={mockUsers}
       />
 
       <EditNumberModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onEditNumber={handleEditNumber}
         number={selectedNumber}
-        projects={mockProjects}
-        users={mockUsers}
+        projects={projects}
+        users={responsibles}
       />
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={() => selectedNumber && handleDeleteNumber(selectedNumber.id)}
+        onConfirm={() => selectedNumber && console.log('Delete:', selectedNumber.id)}
         numberToDelete={selectedNumber?.number || ''}
       />
 
