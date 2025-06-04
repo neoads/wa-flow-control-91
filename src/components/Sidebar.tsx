@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   Phone, 
@@ -7,9 +8,13 @@ import {
   Users, 
   Shield, 
   Activity, 
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useApp } from '@/contexts/AppContext';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   {
@@ -57,6 +62,18 @@ interface SidebarProps {
 
 export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, logout } = useApp();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logout realizado",
+      description: "Até logo!",
+    });
+    navigate('/login');
+  };
 
   return (
     <>
@@ -76,11 +93,11 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex h-16 items-center justify-between px-6 border-b border-sidebar-border">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                <Phone className="h-4 w-4 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                <div className="text-white text-xl font-bold transform rotate-12 skew-x-12 animate-pulse">W</div>
               </div>
-              <span className="font-semibold text-sidebar-foreground">WhatsManager</span>
+              <span className="font-bold text-lg text-sidebar-foreground">Whats Manager</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -127,12 +144,26 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           <div className="p-4 border-t border-sidebar-border">
             <div className="flex items-center space-x-3 px-3 py-2">
               <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-                <span className="text-sm font-medium text-sidebar-accent-foreground">JD</span>
+                <span className="text-sm font-medium text-sidebar-accent-foreground">
+                  {currentUser?.name.charAt(0) || 'U'}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">João Silva</p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">joao@empresa.com</p>
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {currentUser?.name || 'Usuário'}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">
+                  {currentUser?.email || 'email@exemplo.com'}
+                </p>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="h-8 w-8 p-0"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>

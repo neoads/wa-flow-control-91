@@ -1,165 +1,225 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useApp } from '@/contexts/AppContext';
 import { 
   Phone, 
-  PhoneOff, 
-  Activity, 
+  FolderOpen, 
+  Users, 
+  MessageSquare, 
+  Activity,
+  CheckCircle,
+  Clock,
+  Zap,
+  XCircle,
   AlertTriangle,
-  Plus,
-  TrendingUp,
-  Clock
+  Copy
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const Dashboard = () => {
-  const kpis = [
-    {
-      title: "Números Ativos",
-      value: "234",
-      change: "+12%",
-      trend: "up",
-      icon: Phone,
-      color: "text-green-400",
-      bgColor: "bg-green-500/10"
-    },
-    {
-      title: "Com API Conectada",
-      value: "187",
-      change: "+8%",
-      trend: "up",
-      icon: Activity,
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/10"
-    },
-    {
-      title: "Banidos",
-      value: "12",
-      change: "-3%",
-      trend: "down",
-      icon: PhoneOff,
-      color: "text-red-400",
-      bgColor: "bg-red-500/10"
-    },
-    {
-      title: "Aguardando",
-      value: "45",
-      change: "+5%",
-      trend: "up",
-      icon: Clock,
-      color: "text-yellow-400",
-      bgColor: "bg-yellow-500/10"
-    }
-  ];
+  const { numbers, projects, groups, responsibles } = useApp();
+  const { toast } = useToast();
 
-  const recentNumbers = [
-    { number: "+55 11 99999-0001", status: "Ativo", project: "Projeto Alpha", user: "João Silva", time: "2h" },
-    { number: "+55 11 99999-0002", status: "API", project: "Projeto Beta", user: "Maria Santos", time: "4h" },
-    { number: "+55 11 99999-0003", status: "Aquecendo", project: "Projeto Gamma", user: "Pedro Costa", time: "6h" },
-    { number: "+55 11 99999-0004", status: "Ativo", project: "Projeto Alpha", user: "Ana Oliveira", time: "1d" },
-  ];
+  // Calcular estatísticas
+  const stats = {
+    total: numbers.length,
+    ativo: numbers.filter(n => n.status === 'Ativo').length,
+    api: numbers.filter(n => n.status === 'API').length,
+    aquecendo: numbers.filter(n => n.status === 'Aquecendo').length,
+    inativo: numbers.filter(n => n.status === 'Inativo').length,
+    suspenso: numbers.filter(n => n.status === 'Suspenso').length,
+  };
+
+  const copyNumber = async (number: string) => {
+    try {
+      await navigator.clipboard.writeText(number);
+      toast({
+        title: "Copiado!",
+        description: `Número ${number} copiado para área de transferência`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o número",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'Ativo': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'API': return <Zap className="h-4 w-4 text-blue-500" />;
+      case 'Aquecendo': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'Inativo': return <XCircle className="h-4 w-4 text-gray-500" />;
+      case 'Suspenso': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      default: return <Activity className="h-4 w-4" />;
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Ativo": return "bg-green-500/20 text-green-400 border border-green-500/30";
-      case "API": return "bg-blue-500/20 text-blue-400 border border-blue-500/30";
-      case "Aquecendo": return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
-      case "Banido": return "bg-red-500/20 text-red-400 border border-red-500/30";
-      default: return "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+      case 'Ativo': return 'bg-green-500/10 text-green-500';
+      case 'API': return 'bg-blue-500/10 text-blue-500';
+      case 'Aquecendo': return 'bg-yellow-500/10 text-yellow-500';
+      case 'Inativo': return 'bg-gray-500/10 text-gray-500';
+      case 'Suspenso': return 'bg-red-500/10 text-red-500';
+      default: return 'bg-gray-500/10 text-gray-500';
     }
   };
+
+  const recentNumbers = numbers
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Visão geral da sua operação WhatsApp</p>
-        </div>
-        <Button className="bg-green-600 hover:bg-green-700 text-white">
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Número
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground">Visão geral do seu sistema</p>
       </div>
 
-      {/* KPIs */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={kpi.title} className="hover:shadow-lg transition-shadow border-border bg-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-lg ${kpi.bgColor}`}>
-                    <Icon className={`h-6 w-6 ${kpi.color}`} />
-                  </div>
-                  <div className="flex items-center space-x-1 text-sm">
-                    <TrendingUp className={`h-3 w-3 ${kpi.trend === 'up' ? 'text-green-400' : 'text-red-400'}`} />
-                    <span className={kpi.trend === 'up' ? 'text-green-400' : 'text-red-400'}>
-                      {kpi.change}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-2xl font-bold text-foreground">{kpi.value}</h3>
-                  <p className="text-sm text-muted-foreground">{kpi.title}</p>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <CardTitle className="text-lg text-foreground">Últimos Números Adicionados</CardTitle>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Números</CardTitle>
+            <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentNumbers.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <span className="font-medium text-foreground">{item.number}</span>
-                      <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
-                    </div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      {item.project} • {item.user}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{item.time}</span>
-                </div>
-              ))}
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">
+              números cadastrados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Projetos Ativos</CardTitle>
+            <FolderOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{projects.length}</div>
+            <p className="text-xs text-muted-foreground">
+              projetos cadastrados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Responsáveis</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{responsibles.length}</div>
+            <p className="text-xs text-muted-foreground">
+              usuários ativos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Grupos Salvos</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{groups.length}</div>
+            <p className="text-xs text-muted-foreground">
+              links de grupos
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Status Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Status dos Números</CardTitle>
+            <CardDescription>Distribuição por status atual</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-sm">Ativo</span>
+              </div>
+              <Badge variant="secondary">{stats.ativo}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Zap className="h-4 w-4 text-blue-500" />
+                <span className="text-sm">API</span>
+              </div>
+              <Badge variant="secondary">{stats.api}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm">Aquecendo</span>
+              </div>
+              <Badge variant="secondary">{stats.aquecendo}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <XCircle className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">Inativo</span>
+              </div>
+              <Badge variant="secondary">{stats.inativo}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="text-sm">Suspenso</span>
+              </div>
+              <Badge variant="secondary">{stats.suspenso}</Badge>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-foreground">Alertas e Notificações</CardTitle>
+            <CardTitle>Últimos Números Adicionados</CardTitle>
+            <CardDescription>5 registros mais recentes</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
-                <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
-                <div>
-                  <p className="font-medium text-yellow-300">3 números próximos ao limite</p>
-                  <p className="text-sm text-yellow-400/80">Verifique a API dos números que estão com alto volume</p>
+          <CardContent className="space-y-4">
+            {recentNumbers.length > 0 ? (
+              recentNumbers.map((number) => (
+                <div key={number.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyNumber(number.number)}
+                      className="h-8 w-8 p-0 text-green-500 hover:text-green-600"
+                    >
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                    <div>
+                      <p className="text-sm font-medium">{number.number}</p>
+                      <p className="text-xs text-muted-foreground">{number.project}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(number.status)}
+                    <Badge className={getStatusColor(number.status)}>
+                      {number.status}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                <Activity className="h-5 w-5 text-blue-400 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-300">Aquecimento concluído</p>
-                  <p className="text-sm text-blue-400/80">5 números estão prontos para uso</p>
-                </div>
-              </div>
-            </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum número cadastrado ainda
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
