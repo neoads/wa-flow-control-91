@@ -15,7 +15,6 @@ import {
   Zap,
   XCircle,
   AlertTriangle,
-  Copy
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -72,8 +71,14 @@ export const Dashboard = () => {
   };
 
   const recentNumbers = numbers
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
     .slice(0, 5);
+
+  // Encontrar nomes dos projetos e responsáveis
+  const getProjectName = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    return project?.name || 'Projeto não encontrado';
+  };
 
   return (
     <div className="space-y-6">
@@ -204,7 +209,7 @@ export const Dashboard = () => {
                     </Button>
                     <div>
                       <p className="text-sm font-medium">{number.number}</p>
-                      <p className="text-xs text-muted-foreground">{number.project}</p>
+                      <p className="text-xs text-muted-foreground">{getProjectName(number.project_id)}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">

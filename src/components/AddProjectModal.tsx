@@ -12,19 +12,20 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { FolderOpen } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
 
 interface AddProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProject: (project: any) => void;
 }
 
-export const AddProjectModal = ({ isOpen, onClose, onAddProject }: AddProjectModalProps) => {
+export const AddProjectModal = ({ isOpen, onClose }: AddProjectModalProps) => {
+  const { addProject } = useApp();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('');
 
     if (!name.trim()) {
@@ -37,16 +38,16 @@ export const AddProjectModal = ({ isOpen, onClose, onAddProject }: AddProjectMod
       return;
     }
 
-    const newProject = {
-      id: Date.now(),
+    const success = await addProject({
       name: name.trim(),
-      description: description.trim()
-    };
+      description: description.trim() || undefined
+    });
 
-    onAddProject(newProject);
-    setName('');
-    setDescription('');
-    onClose();
+    if (success) {
+      setName('');
+      setDescription('');
+      onClose();
+    }
   };
 
   const handleClose = () => {

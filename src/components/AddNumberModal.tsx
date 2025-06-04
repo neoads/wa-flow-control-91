@@ -18,80 +18,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { useApp } from '@/contexts/AppContext';
 
 interface AddNumberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddNumber: (numberData: any) => void;
-  projects?: Array<{id: number, name: string}>;
-  users?: Array<{id: number, name: string}>;
 }
 
-export const AddNumberModal = ({ 
-  isOpen, 
-  onClose, 
-  onAddNumber, 
-  projects = [],
-  users = []
-}: AddNumberModalProps) => {
+export const AddNumberModal = ({ isOpen, onClose }: AddNumberModalProps) => {
+  const { projects, responsibles, addNumber } = useApp();
   const [formData, setFormData] = useState({
     number: '',
-    project: '',
-    responsible: '',
+    project_id: '',
+    responsible_id: '',
     device: '',
     status: 'Aquecendo'
   });
-  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.number || !formData.project || !formData.responsible || !formData.device) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
+    if (!formData.number || !formData.project_id || !formData.responsible_id || !formData.device) {
       return;
     }
 
-    // Validação do número
-    if (!formData.number.startsWith('+55')) {
-      toast({
-        title: "Erro",
-        description: "O número deve começar com +55.",
-        variant: "destructive",
+    const success = await addNumber(formData);
+    if (success) {
+      setFormData({
+        number: '',
+        project_id: '',
+        responsible_id: '',
+        device: '',
+        status: 'Aquecendo'
       });
-      return;
+      onClose();
     }
-
-    const newNumber = {
-      id: Date.now(),
-      number: formData.number,
-      status: formData.status,
-      project: formData.project,
-      responsible: formData.responsible,
-      device: formData.device,
-      lastActivity: 'Agora',
-      messages: 0
-    };
-
-    onAddNumber(newNumber);
-    
-    toast({
-      title: "Sucesso!",
-      description: "Número adicionado com sucesso.",
-    });
-
-    setFormData({
-      number: '',
-      project: '',
-      responsible: '',
-      device: '',
-      status: 'Aquecendo'
-    });
-    onClose();
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -122,13 +83,13 @@ export const AddNumberModal = ({
 
           <div className="space-y-2">
             <Label htmlFor="project">Projeto *</Label>
-            <Select value={formData.project} onValueChange={(value) => handleInputChange('project', value)}>
+            <Select value={formData.project_id} onValueChange={(value) => handleInputChange('project_id', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um projeto" />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.name}>
+                  <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>
                 ))}
@@ -138,14 +99,14 @@ export const AddNumberModal = ({
 
           <div className="space-y-2">
             <Label htmlFor="responsible">Responsável *</Label>
-            <Select value={formData.responsible} onValueChange={(value) => handleInputChange('responsible', value)}>
+            <Select value={formData.responsible_id} onValueChange={(value) => handleInputChange('responsible_id', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.name}>
-                    {user.name}
+                {responsibles.map((responsible) => (
+                  <SelectItem key={responsible.id} value={responsible.id}>
+                    {responsible.name}
                   </SelectItem>
                 ))}
               </SelectContent>

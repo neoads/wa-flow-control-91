@@ -11,18 +11,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddUser: (user: any) => void;
 }
 
-export const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) => {
+export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
+  const { addResponsible } = useApp();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('');
 
     if (!name.trim()) {
@@ -35,18 +37,21 @@ export const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) 
       return;
     }
 
-    const newUser = {
-      id: Date.now(),
-      name: name.trim()
-    };
+    const success = await addResponsible({
+      name: name.trim(),
+      email: email.trim() || undefined
+    });
 
-    onAddUser(newUser);
-    setName('');
-    onClose();
+    if (success) {
+      setName('');
+      setEmail('');
+      onClose();
+    }
   };
 
   const handleClose = () => {
     setName('');
+    setEmail('');
     setError('');
     onClose();
   };
@@ -57,17 +62,17 @@ export const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Users className="h-5 w-5" />
-            <span>Adicionar Usuário</span>
+            <span>Adicionar Responsável</span>
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="user-name">Nome do Usuário</Label>
+            <Label htmlFor="user-name">Nome do Responsável</Label>
             <Input
               id="user-name"
               type="text"
-              placeholder="Digite o nome do usuário"
+              placeholder="Digite o nome do responsável"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -79,9 +84,20 @@ export const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) 
               <p className="text-sm text-red-500">{error}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="user-email">Email (opcional)</Label>
+            <Input
+              id="user-email"
+              type="email"
+              placeholder="email@exemplo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
           
           <p className="text-sm text-muted-foreground">
-            Este usuário poderá ser selecionado como responsável no cadastro de números WhatsApp.
+            Este responsável poderá ser selecionado no cadastro de números WhatsApp.
           </p>
         </div>
 

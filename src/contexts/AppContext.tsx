@@ -1,245 +1,118 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProjects } from '@/hooks/useProjects';
+import { useResponsibles } from '@/hooks/useResponsibles';
+import { useWhatsNumbers } from '@/hooks/useWhatsNumbers';
+import { useGroups } from '@/hooks/useGroups';
+import type { Tables } from '@/integrations/supabase/types';
 
-export interface User {
+export type User = {
   id: string;
   name: string;
   email: string;
-}
+};
 
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: Date;
-}
+export type Project = Tables<'projects'>;
+export type WhatsNumber = Tables<'whats_numbers'>;
+export type Group = Tables<'groups'>;
+export type Responsible = Tables<'responsibles'>;
 
-export interface WhatsNumber {
-  id: string;
-  number: string;
-  project: string;
-  responsible: string;
-  device: 'Celular' | 'Emulador';
-  status: 'Ativo' | 'API' | 'Aquecendo' | 'Inativo' | 'Suspenso';
-  url: string;
-  createdAt: Date;
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  url: string;
-  createdAt: Date;
-}
-
-export interface Responsible {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface AppState {
+interface AppContextType {
+  // Auth
   currentUser: User | null;
-  users: User[];
-  projects: Project[];
-  numbers: WhatsNumber[];
-  groups: Group[];
-  responsibles: Responsible[];
-}
-
-interface AppContextType extends AppState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   register: (name: string, email: string, password: string) => Promise<boolean>;
-  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
-  addNumber: (number: Omit<WhatsNumber, 'id' | 'url' | 'createdAt'>) => void;
-  addGroup: (group: Omit<Group, 'id' | 'createdAt'>) => void;
-  addResponsible: (responsible: Omit<Responsible, 'id'>) => void;
-  updateNumber: (id: string, number: Partial<WhatsNumber>) => void;
-  deleteNumber: (id: string) => void;
-  deleteProject: (id: string) => void;
-  deleteGroup: (id: string) => void;
-  deleteResponsible: (id: string) => void;
+  
+  // Projects
+  projects: Project[];
+  addProject: (project: { name: string; description?: string }) => Promise<Project | null>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  
+  // Numbers
+  numbers: WhatsNumber[];
+  addNumber: (numberData: {
+    number: string;
+    project_id: string;
+    responsible_id: string;
+    device: string;
+    status: string;
+  }) => Promise<WhatsNumber | null>;
+  updateNumber: (id: string, updates: Partial<WhatsNumber>) => Promise<void>;
+  deleteNumber: (id: string) => Promise<void>;
+  
+  // Groups
+  groups: Group[];
+  addGroup: (group: { name: string; url: string }) => Promise<Group | null>;
+  updateGroup: (id: string, updates: Partial<Group>) => Promise<void>;
+  deleteGroup: (id: string) => Promise<void>;
+  
+  // Responsibles
+  responsibles: Responsible[];
+  addResponsible: (responsible: { name: string; email?: string }) => Promise<Responsible | null>;
+  updateResponsible: (id: string, updates: Partial<Responsible>) => Promise<void>;
+  deleteResponsible: (id: string) => Promise<void>;
+  
+  // Loading states
+  loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const initialState: AppState = {
-  currentUser: null,
-  users: [
-    { id: '1', name: 'Admin', email: 'admin@test.com' }
-  ],
-  projects: [
-    { id: '1', name: 'Campanha Black Friday', description: 'Promoções especiais', createdAt: new Date() },
-    { id: '2', name: 'Lançamento VIP', description: 'Produtos exclusivos', createdAt: new Date() }
-  ],
-  numbers: [
-    {
-      id: '1',
-      number: '+5511999999999',
-      project: 'Campanha Black Friday',
-      responsible: 'Admin',
-      device: 'Celular',
-      status: 'Ativo',
-      url: 'https://wa.me/5511999999999',
-      createdAt: new Date()
-    },
-    {
-      id: '2',
-      number: '+5511888888888',
-      project: 'Lançamento VIP',
-      responsible: 'Admin',
-      device: 'Emulador',
-      status: 'Aquecendo',
-      url: 'https://wa.me/5511888888888',
-      createdAt: new Date()
-    }
-  ],
-  groups: [
-    { id: '1', name: 'Grupo VIP Clientes', url: 'https://chat.whatsapp.com/example1', createdAt: new Date() },
-    { id: '2', name: 'Suporte Técnico', url: 'https://chat.whatsapp.com/example2', createdAt: new Date() }
-  ],
-  responsibles: [
-    { id: '1', name: 'Admin', email: 'admin@test.com' },
-    { id: '2', name: 'João Silva', email: 'joao@empresa.com' },
-    { id: '3', name: 'Maria Santos', email: 'maria@empresa.com' }
-  ]
-};
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('whatsManager_data');
-    return saved ? JSON.parse(saved) : initialState;
-  });
+  const auth = useAuth();
+  const userId = auth.user?.id;
+  
+  const projects = useProjects(userId);
+  const responsibles = useResponsibles(userId);
+  const numbers = useWhatsNumbers(userId);
+  const groups = useGroups(userId);
 
-  useEffect(() => {
-    localStorage.setItem('whatsManager_data', JSON.stringify(state));
-  }, [state]);
+  const currentUser = auth.user ? {
+    id: auth.user.id,
+    name: auth.user.user_metadata?.name || auth.user.email || '',
+    email: auth.user.email || '',
+  } : null;
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulação de login - em produção seria uma chamada real à API
-    const user = state.users.find(u => u.email === email);
-    if (user && password === '123456') {
-      setState(prev => ({ ...prev, currentUser: user }));
-      return true;
-    }
-    return false;
-  };
-
-  const logout = () => {
-    setState(prev => ({ ...prev, currentUser: null }));
-  };
-
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    const userExists = state.users.some(u => u.email === email);
-    if (userExists) return false;
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email
-    };
-
-    setState(prev => ({
-      ...prev,
-      users: [...prev.users, newUser],
-      currentUser: newUser
-    }));
-    return true;
-  };
-
-  const addProject = (project: Omit<Project, 'id' | 'createdAt'>) => {
-    const newProject: Project = {
-      ...project,
-      id: Date.now().toString(),
-      createdAt: new Date()
-    };
-    setState(prev => ({ ...prev, projects: [...prev.projects, newProject] }));
-  };
-
-  const addNumber = (number: Omit<WhatsNumber, 'id' | 'url' | 'createdAt'>) => {
-    const cleanNumber = number.number.replace(/\D/g, '');
-    const formattedNumber = `+55${cleanNumber}`;
-    const newNumber: WhatsNumber = {
-      ...number,
-      number: formattedNumber,
-      id: Date.now().toString(),
-      url: `https://wa.me/${cleanNumber}`,
-      createdAt: new Date()
-    };
-    setState(prev => ({ ...prev, numbers: [...prev.numbers, newNumber] }));
-  };
-
-  const addGroup = (group: Omit<Group, 'id' | 'createdAt'>) => {
-    const newGroup: Group = {
-      ...group,
-      id: Date.now().toString(),
-      createdAt: new Date()
-    };
-    setState(prev => ({ ...prev, groups: [...prev.groups, newGroup] }));
-  };
-
-  const addResponsible = (responsible: Omit<Responsible, 'id'>) => {
-    const newResponsible: Responsible = {
-      ...responsible,
-      id: Date.now().toString()
-    };
-    setState(prev => ({ ...prev, responsibles: [...prev.responsibles, newResponsible] }));
-  };
-
-  const updateNumber = (id: string, updates: Partial<WhatsNumber>) => {
-    setState(prev => ({
-      ...prev,
-      numbers: prev.numbers.map(num => 
-        num.id === id ? { ...num, ...updates } : num
-      )
-    }));
-  };
-
-  const deleteNumber = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      numbers: prev.numbers.filter(num => num.id !== id)
-    }));
-  };
-
-  const deleteProject = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      projects: prev.projects.filter(proj => proj.id !== id)
-    }));
-  };
-
-  const deleteGroup = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      groups: prev.groups.filter(group => group.id !== id)
-    }));
-  };
-
-  const deleteResponsible = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      responsibles: prev.responsibles.filter(resp => resp.id !== id)
-    }));
+  const contextValue: AppContextType = {
+    // Auth
+    currentUser,
+    login: auth.login,
+    logout: auth.logout,
+    register: auth.register,
+    
+    // Projects
+    projects: projects.projects,
+    addProject: projects.addProject,
+    updateProject: projects.updateProject,
+    deleteProject: projects.deleteProject,
+    
+    // Numbers
+    numbers: numbers.numbers,
+    addNumber: numbers.addNumber,
+    updateNumber: numbers.updateNumber,
+    deleteNumber: numbers.deleteNumber,
+    
+    // Groups
+    groups: groups.groups,
+    addGroup: groups.addGroup,
+    updateGroup: groups.updateGroup,
+    deleteGroup: groups.deleteGroup,
+    
+    // Responsibles
+    responsibles: responsibles.responsibles,
+    addResponsible: responsibles.addResponsible,
+    updateResponsible: responsibles.updateResponsible,
+    deleteResponsible: responsibles.deleteResponsible,
+    
+    // Loading
+    loading: auth.loading || projects.loading || responsibles.loading || numbers.loading || groups.loading,
   };
 
   return (
-    <AppContext.Provider value={{
-      ...state,
-      login,
-      logout,
-      register,
-      addProject,
-      addNumber,
-      addGroup,
-      addResponsible,
-      updateNumber,
-      deleteNumber,
-      deleteProject,
-      deleteGroup,
-      deleteResponsible
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
