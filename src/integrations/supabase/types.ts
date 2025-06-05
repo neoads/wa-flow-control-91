@@ -14,21 +14,32 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          project_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
+          project_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          project_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "device_emails_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       groups: {
         Row: {
@@ -132,6 +143,7 @@ export type Database = {
       security_settings: {
         Row: {
           codigo_pin: string | null
+          configuration_name: string
           created_at: string
           email_recuperacao: string | null
           id: string
@@ -141,6 +153,7 @@ export type Database = {
         }
         Insert: {
           codigo_pin?: string | null
+          configuration_name?: string
           created_at?: string
           email_recuperacao?: string | null
           id?: string
@@ -150,6 +163,7 @@ export type Database = {
         }
         Update: {
           codigo_pin?: string | null
+          configuration_name?: string
           created_at?: string
           email_recuperacao?: string | null
           id?: string

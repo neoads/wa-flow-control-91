@@ -4,59 +4,90 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import bcrypt from 'bcryptjs';
 
+interface SecurityConfiguration {
+  id: string;
+  configuration_name: string;
+  email_recuperacao: string;
+  mensagem_recuperacao: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DeviceEmail {
+  id: string;
+  email: string;
+  project_id: string | null;
+  project?: {
+    name: string;
+  };
+}
+
 export const useSecuritySettings = (userId: string | undefined) => {
   const [securityData, setSecurityData] = useState({
     email_recuperacao: '',
     mensagem_recuperacao: '',
     codigo_pin: ''
   });
-  const [deviceEmails, setDeviceEmails] = useState<string[]>([]);
+  const [deviceEmails, setDeviceEmails] = useState<DeviceEmail[]>([]);
+  const [configurations, setConfigurations] = useState<SecurityConfiguration[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Load security settings
-  const loadSecuritySettings = async () => {
+  // Load security configurations
+  const loadSecurityConfigurations = async () => {
     if (!userId) return;
     
-    setLoading(true);
     try {
-      // Load security settings
-      const { data: settings } = await supabase
+      const { data: configs } = await supabase
         .from('security_settings')
-        .select('*')
+        .select('id, configuration_name, email_recuperacao, mensagem_recuperacao, created_at, updated_at')
         .eq('user_id', userId)
-        .maybeSingle();
+        .order('updated_at', { ascending: false });
 
-      if (settings) {
-        setSecurityData({
-          email_recuperacao: settings.email_recuperacao || '',
-          mensagem_recuperacao: settings.mensagem_recuperacao || '',
-          codigo_pin: '' // Never load the PIN for security
-        });
-      }
-
-      // Load device emails
-      const { data: emails } = await supabase
-        .from('device_emails')
-        .select('email')
-        .eq('user_id', userId);
-
-      if (emails) {
-        setDeviceEmails(emails.map(item => item.email));
+      if (configs) {
+        setConfigurations(configs);
       }
     } catch (error) {
-      console.error('Error loading security settings:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading security configurations:', error);
     }
   };
 
-  // Save security settings
-  const saveSecuritySettings = async (data: {
+  // Load device emails with project information
+  const loadDeviceEmails = async () => {
+    if (!userId) return;
+    
+    try {
+      const { data: emails } = await supabase
+        .from('device_emails')
+        .select(`
+          id,
+          email,
+          project_id,
+          projects (
+            name
+          )
+        `)
+        .eq('user_id', userId);
+
+      if (emails) {
+        setDeviceEmails(emails.map(item => ({
+          id: item.id,
+          email: item.email,
+          project_id: item.project_id,
+          project: item.projects ? { name: item.projects.name } : undefined
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading device emails:', error);
+    }
+  };
+
+  // Save security configuration with name
+  const saveSecurityConfiguration = async (data: {
     email_recuperacao: string;
     mensagem_recuperacao: string;
     codigo_pin: string;
-  }) => {
+  }, configurationName: string) => {
     if (!userId) return false;
 
     try {
@@ -70,6 +101,7 @@ export const useSecuritySettings = (userId: string | undefined) => {
         .from('security_settings')
         .upsert({
           user_id: userId,
+          configuration_name: configurationName,
           email_recuperacao: data.email_recuperacao,
           mensagem_recuperacao: data.mensagem_recuperacao,
           codigo_pin: hashedPin,
@@ -79,24 +111,70 @@ export const useSecuritySettings = (userId: string | undefined) => {
       if (error) throw error;
 
       toast({
-        title: "Dados de Segurança Salvos",
-        description: "Suas informações de segurança foram atualizadas com sucesso.",
+        title: "Configuração Salva",
+        description: `A configuração "${configurationName}" foi salva com sucesso.`,
       });
 
+      await loadSecurityConfigurations();
       return true;
     } catch (error) {
-      console.error('Error saving security settings:', error);
+      console.error('Error saving security configuration:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações de segurança.",
+        description: "Não foi possível salvar a configuração de segurança.",
         variant: "destructive"
       });
       return false;
     }
   };
 
-  // Add device email
-  const addDeviceEmail = async (email: string) => {
+  // Load specific configuration
+  const loadConfiguration = (config: SecurityConfiguration) => {
+    setSecurityData({
+      email_recuperacao: config.email_recuperacao || '',
+      mensagem_recuperacao: config.mensagem_recuperacao || '',
+      codigo_pin: '' // Never load the PIN for security
+    });
+
+    toast({
+      title: "Configuração Carregada",
+      description: `A configuração "${config.configuration_name}" foi carregada.`,
+    });
+  };
+
+  // Delete configuration
+  const deleteConfiguration = async (configId: string) => {
+    if (!userId) return false;
+
+    try {
+      const { error } = await supabase
+        .from('security_settings')
+        .delete()
+        .eq('id', configId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Configuração Removida",
+        description: "A configuração foi removida com sucesso.",
+      });
+
+      await loadSecurityConfigurations();
+      return true;
+    } catch (error) {
+      console.error('Error deleting configuration:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover a configuração.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Add device email with optional project
+  const addDeviceEmail = async (email: string, projectId?: string) => {
     if (!userId) return false;
 
     try {
@@ -104,11 +182,12 @@ export const useSecuritySettings = (userId: string | undefined) => {
         .from('device_emails')
         .insert({
           user_id: userId,
-          email: email
+          email: email,
+          project_id: projectId || null
         });
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
           toast({
             title: "E-mail Duplicado",
             description: "Este e-mail já está cadastrado.",
@@ -119,12 +198,12 @@ export const useSecuritySettings = (userId: string | undefined) => {
         throw error;
       }
 
-      setDeviceEmails(prev => [...prev, email]);
       toast({
         title: "E-mail Adicionado",
         description: `O e-mail ${email} foi adicionado com sucesso.`,
       });
 
+      await loadDeviceEmails();
       return true;
     } catch (error) {
       console.error('Error adding device email:', error);
@@ -138,24 +217,24 @@ export const useSecuritySettings = (userId: string | undefined) => {
   };
 
   // Remove device email
-  const removeDeviceEmail = async (email: string) => {
+  const removeDeviceEmail = async (emailId: string) => {
     if (!userId) return false;
 
     try {
       const { error } = await supabase
         .from('device_emails')
         .delete()
-        .eq('user_id', userId)
-        .eq('email', email);
+        .eq('id', emailId)
+        .eq('user_id', userId);
 
       if (error) throw error;
 
-      setDeviceEmails(prev => prev.filter(e => e !== email));
       toast({
         title: "E-mail Removido",
-        description: `O e-mail ${email} foi removido.`,
+        description: "O e-mail foi removido com sucesso.",
       });
 
+      await loadDeviceEmails();
       return true;
     } catch (error) {
       console.error('Error removing device email:', error);
@@ -169,17 +248,24 @@ export const useSecuritySettings = (userId: string | undefined) => {
   };
 
   useEffect(() => {
-    loadSecuritySettings();
+    if (userId) {
+      loadSecurityConfigurations();
+      loadDeviceEmails();
+    }
   }, [userId]);
 
   return {
     securityData,
     setSecurityData,
     deviceEmails,
+    configurations,
     loading,
-    saveSecuritySettings,
+    saveSecurityConfiguration,
+    loadConfiguration,
+    deleteConfiguration,
     addDeviceEmail,
     removeDeviceEmail,
-    loadSecuritySettings
+    loadSecurityConfigurations,
+    loadDeviceEmails
   };
 };

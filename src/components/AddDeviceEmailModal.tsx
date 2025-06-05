@@ -5,95 +5,108 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useProjects } from '@/hooks/useProjects';
+import { useApp } from '@/contexts/AppContext';
 
 interface AddDeviceEmailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddEmail: (email: string) => void;
+  onAddEmail: (email: string, projectId?: string) => void;
 }
 
-export const AddDeviceEmailModal = ({ isOpen, onClose, onAddEmail }: AddDeviceEmailModalProps) => {
+export const AddDeviceEmailModal = ({
+  isOpen,
+  onClose,
+  onAddEmail
+}: AddDeviceEmailModalProps) => {
+  const { currentUser } = useApp();
+  const { projects } = useProjects(currentUser?.id);
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [selectedProject, setSelectedProject] = useState<string>('');
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = () => {
-    setError('');
-
-    if (!email.trim()) {
-      setError('Por favor, insira um e-mail.');
-      return;
+  const handleAdd = () => {
+    if (email && validateEmail(email)) {
+      onAddEmail(email, selectedProject || undefined);
+      setEmail('');
+      setSelectedProject('');
+      onClose();
     }
-
-    if (!validateEmail(email)) {
-      setError('Por favor, insira um e-mail válido.');
-      return;
-    }
-
-    onAddEmail(email.trim());
-    setEmail('');
-    onClose();
   };
 
   const handleClose = () => {
     setEmail('');
-    setError('');
+    setSelectedProject('');
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Mail className="h-5 w-5" />
-            <span>Adicionar E-mail de Dispositivo</span>
-          </DialogTitle>
+          <DialogTitle>Adicionar E-mail de Dispositivo</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
+        <div className="space-y-4">
+          <div>
             <Label htmlFor="device-email">E-mail do Dispositivo</Label>
             <Input
               id="device-email"
               type="email"
-              placeholder="colaborador@empresa.com"
+              placeholder="dispositivo@exemplo.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError('');
-              }}
-              className={error ? 'border-red-500' : ''}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+              className="mt-1"
             />
-            {error && (
-              <p className="text-sm text-red-500">{error}</p>
-            )}
           </div>
           
-          <p className="text-sm text-muted-foreground">
-            Este e-mail será usado para monitoramento e alertas de segurança
-            quando o dispositivo for autorizado a acessar a conta.
-          </p>
-        </div>
+          <div>
+            <Label htmlFor="project-select">Projeto (Opcional)</Label>
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Selecione um projeto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum projeto</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground mt-1">
+              Vincule este e-mail a um projeto específico
+            </p>
+          </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit}>
-            Adicionar E-mail
-          </Button>
-        </DialogFooter>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleAdd} 
+              disabled={!email || !validateEmail(email)}
+            >
+              Adicionar
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
