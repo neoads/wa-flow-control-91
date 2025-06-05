@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      device_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           created_at: string | null
@@ -104,6 +125,87 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      security_settings: {
+        Row: {
+          codigo_pin: string | null
+          created_at: string
+          email_recuperacao: string | null
+          id: string
+          mensagem_recuperacao: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          codigo_pin?: string | null
+          created_at?: string
+          email_recuperacao?: string | null
+          id?: string
+          mensagem_recuperacao?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          codigo_pin?: string | null
+          created_at?: string
+          email_recuperacao?: string | null
+          id?: string
+          mensagem_recuperacao?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      warming_groups: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      warming_numbers: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          numero: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          numero: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          numero?: string
+          url?: string
           user_id?: string
         }
         Relationships: []

@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { 
   Shield, 
   Mail, 
@@ -18,22 +17,24 @@ import {
   EyeOff 
 } from 'lucide-react';
 import { AddDeviceEmailModal } from './AddDeviceEmailModal';
+import { useApp } from '@/contexts/AppContext';
+import { useSecuritySettings } from '@/hooks/useSecuritySettings';
 
 export const Seguranca = () => {
-  const { toast } = useToast();
+  const { currentUser } = useApp();
   const [showPin, setShowPin] = useState(false);
   const [isAddEmailModalOpen, setIsAddEmailModalOpen] = useState(false);
-  
-  // Estados do formulário de segurança
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [recoveryMessage, setRecoveryMessage] = useState('');
   const [pin, setPin] = useState('');
   
-  // Estados dos e-mails de dispositivos
-  const [deviceEmails, setDeviceEmails] = useState([
-    'colaborador1@empresa.com',
-    'admin@empresa.com'
-  ]);
+  const {
+    securityData,
+    setSecurityData,
+    deviceEmails,
+    loading,
+    saveSecuritySettings,
+    addDeviceEmail,
+    removeDeviceEmail
+  } = useSecuritySettings(currentUser?.id);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,71 +45,36 @@ export const Seguranca = () => {
     return pin.length >= 4 && pin.length <= 8;
   };
 
-  const handleSaveSecurity = () => {
+  const handleSaveSecurity = async () => {
     // Validações
-    if (!recoveryEmail || !recoveryMessage || !pin) {
-      toast({
-        title: "Erro de Validação",
-        description: "Todos os campos são obrigatórios.",
-        variant: "destructive"
-      });
+    if (!securityData.email_recuperacao || !securityData.mensagem_recuperacao || !pin) {
       return;
     }
 
-    if (!validateEmail(recoveryEmail)) {
-      toast({
-        title: "E-mail Inválido",
-        description: "Por favor, insira um e-mail válido.",
-        variant: "destructive"
-      });
+    if (!validateEmail(securityData.email_recuperacao)) {
       return;
     }
 
     if (!validatePin(pin)) {
-      toast({
-        title: "PIN Inválido",
-        description: "O PIN deve ter entre 4 e 8 caracteres.",
-        variant: "destructive"
-      });
       return;
     }
 
-    // Simular salvamento
-    toast({
-      title: "Dados de Segurança Salvos",
-      description: "Suas informações de segurança foram atualizadas com sucesso.",
+    const success = await saveSecuritySettings({
+      ...securityData,
+      codigo_pin: pin
     });
 
-    console.log('Salvando dados de segurança:', {
-      recoveryEmail,
-      recoveryMessage,
-      pin: '***' // PIN oculto no log
-    });
-  };
-
-  const handleAddDeviceEmail = (email: string) => {
-    if (deviceEmails.includes(email)) {
-      toast({
-        title: "E-mail Duplicado",
-        description: "Este e-mail já está cadastrado.",
-        variant: "destructive"
-      });
-      return;
+    if (success) {
+      setPin(''); // Clear PIN after saving
     }
-
-    setDeviceEmails([...deviceEmails, email]);
-    toast({
-      title: "E-mail Adicionado",
-      description: `O e-mail ${email} foi adicionado com sucesso.`,
-    });
   };
 
-  const handleRemoveDeviceEmail = (emailToRemove: string) => {
-    setDeviceEmails(deviceEmails.filter(email => email !== emailToRemove));
-    toast({
-      title: "E-mail Removido",
-      description: `O e-mail ${emailToRemove} foi removido.`,
-    });
+  const handleAddDeviceEmail = async (email: string) => {
+    await addDeviceEmail(email);
+  };
+
+  const handleRemoveDeviceEmail = async (emailToRemove: string) => {
+    await removeDeviceEmail(emailToRemove);
   };
 
   return (
@@ -142,8 +108,8 @@ export const Seguranca = () => {
               id="recovery-email"
               type="email"
               placeholder="seu-email-de-recuperacao@exemplo.com"
-              value={recoveryEmail}
-              onChange={(e) => setRecoveryEmail(e.target.value)}
+              value={securityData.email_recuperacao}
+              onChange={(e) => setSecurityData(prev => ({ ...prev, email_recuperacao: e.target.value }))}
               className="w-full"
             />
             <p className="text-sm text-muted-foreground">
@@ -160,8 +126,8 @@ export const Seguranca = () => {
             <Textarea
               id="recovery-message"
               placeholder="Digite uma frase de segurança ou código mnemônico..."
-              value={recoveryMessage}
-              onChange={(e) => setRecoveryMessage(e.target.value)}
+              value={securityData.mensagem_recuperacao}
+              onChange={(e) => setSecurityData(prev => ({ ...prev, mensagem_recuperacao: e.target.value }))}
               className="min-h-[100px]"
             />
             <p className="text-sm text-muted-foreground">
@@ -204,8 +170,12 @@ export const Seguranca = () => {
             </p>
           </div>
 
-          <Button onClick={handleSaveSecurity} className="w-full">
-            Salvar Informações de Segurança
+          <Button 
+            onClick={handleSaveSecurity} 
+            className="w-full" 
+            disabled={loading}
+          >
+            {loading ? 'Salvando...' : 'Salvar Informações de Segurança'}
           </Button>
         </CardContent>
       </Card>
@@ -257,6 +227,7 @@ export const Seguranca = () => {
                     size="sm"
                     onClick={() => handleRemoveDeviceEmail(email)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    disabled={loading}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

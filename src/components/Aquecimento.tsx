@@ -11,47 +11,31 @@ import {
   Users,
   Link as LinkIcon,
   Trash2,
-  Edit,
   Flame,
   Copy,
   Check
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useApp } from '@/contexts/AppContext';
+import { useWarmingData } from '@/hooks/useWarmingData';
 
 export const Aquecimento = () => {
+  const { currentUser } = useApp();
   const [numbersText, setNumbersText] = useState('');
   const [groupsText, setGroupsText] = useState('');
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
   const { toast } = useToast();
   
-  const [warmupNumbers, setWarmupNumbers] = useState([
-    {
-      id: 1,
-      number: "+5511912345678",
-      description: "Número de teste da campanha X",
-      url: "https://wa.me/5511912345678"
-    },
-    {
-      id: 2,
-      number: "+5562998765432",
-      description: "Aquece de novo lote VIP",
-      url: "https://wa.me/5562998765432"
-    }
-  ]);
-
-  const [warmupGroups, setWarmupGroups] = useState([
-    {
-      id: 1,
-      name: "Grupo da Campanha A",
-      url: "https://chat.whatsapp.com/inviteLinkA"
-    },
-    {
-      id: 2,
-      name: "Lançamento VIP 3",
-      url: "https://chat.whatsapp.com/inviteLinkB"
-    }
-  ]);
+  const {
+    warmingNumbers,
+    warmingGroups,
+    loading,
+    saveWarmingNumbers,
+    saveWarmingGroups,
+    deleteWarmingNumber,
+    deleteWarmingGroup
+  } = useWarmingData(currentUser?.id);
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
@@ -76,100 +60,30 @@ export const Aquecimento = () => {
     }
   };
 
-  const handleSaveNumbers = () => {
+  const handleSaveNumbers = async () => {
     if (!numbersText.trim()) return;
 
-    const lines = numbersText.trim().split('\n');
-    const newNumbers = lines.map((line, index) => {
-      const parts = line.split('|');
-      const number = parts[0]?.trim();
-      const description = parts[1]?.trim() || '';
-      
-      // Remove +55 from number for URL generation
-      const urlNumber = number?.replace('+', '');
-      
-      return {
-        id: Date.now() + index,
-        number,
-        description,
-        url: `https://wa.me/${urlNumber}`
-      };
-    }).filter(item => item.number && item.number.startsWith('+55'));
-
-    // Check for duplicates
-    const existingNumbers = warmupNumbers.map(n => n.number);
-    const uniqueNumbers = newNumbers.filter(n => !existingNumbers.includes(n.number));
-
-    if (uniqueNumbers.length === 0) {
-      toast({
-        title: "Aviso",
-        description: "Todos os números já estão cadastrados.",
-        variant: "destructive",
-      });
-      return;
+    const success = await saveWarmingNumbers(numbersText);
+    if (success) {
+      setNumbersText('');
     }
-
-    setWarmupNumbers(prev => [...prev, ...uniqueNumbers]);
-    setNumbersText('');
-    
-    toast({
-      title: "Sucesso!",
-      description: `${uniqueNumbers.length} números de aquecimento salvos.`,
-    });
   };
 
-  const handleSaveGroups = () => {
+  const handleSaveGroups = async () => {
     if (!groupsText.trim()) return;
 
-    const lines = groupsText.trim().split('\n');
-    const newGroups = lines.map((line, index) => {
-      const parts = line.split('|');
-      const name = parts[0]?.trim();
-      const url = parts[1]?.trim();
-      
-      return {
-        id: Date.now() + index,
-        name,
-        url
-      };
-    }).filter(item => item.name && item.url && item.url.includes('chat.whatsapp.com'));
-
-    // Check for duplicates
-    const existingUrls = warmupGroups.map(g => g.url);
-    const uniqueGroups = newGroups.filter(g => !existingUrls.includes(g.url));
-
-    if (uniqueGroups.length === 0) {
-      toast({
-        title: "Aviso",
-        description: "Todos os grupos já estão cadastrados.",
-        variant: "destructive",
-      });
-      return;
+    const success = await saveWarmingGroups(groupsText);
+    if (success) {
+      setGroupsText('');
     }
-
-    setWarmupGroups(prev => [...prev, ...uniqueGroups]);
-    setGroupsText('');
-    
-    toast({
-      title: "Sucesso!",
-      description: `${uniqueGroups.length} grupos salvos.`,
-    });
   };
 
-  const deleteNumber = (id: number) => {
-    setWarmupNumbers(prev => prev.filter(num => num.id !== id));
-    toast({
-      title: "Removido",
-      description: "Número de aquecimento removido.",
-    });
+  const handleDeleteNumber = async (id: string) => {
+    await deleteWarmingNumber(id);
   };
 
-  const deleteGroup = (id: number) => {
-    setWarmupGroups(prev => prev.filter(group => group.id !== id));
-    toast({
-      title: "Removido",
-      description: "Grupo removido.",
-    });
+  const handleDeleteGroup = async (id: string) => {
+    await deleteWarmingGroup(id);
   };
 
   return (
@@ -220,10 +134,10 @@ export const Aquecimento = () => {
               <Button 
                 onClick={handleSaveNumbers}
                 className="bg-green-600 hover:bg-green-700"
-                disabled={!numbersText.trim()}
+                disabled={!numbersText.trim() || loading}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Salvar Números de Aquecimento
+                {loading ? 'Salvando...' : 'Salvar Números de Aquecimento'}
               </Button>
             </CardContent>
           </Card>
@@ -232,8 +146,8 @@ export const Aquecimento = () => {
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span className="text-foreground">Números Cadastrados ({warmupNumbers.length})</span>
-                <Badge variant="secondary">{warmupNumbers.length} números</Badge>
+                <span className="text-foreground">Números Cadastrados ({warmingNumbers.length})</span>
+                <Badge variant="secondary">{warmingNumbers.length} números</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -248,13 +162,13 @@ export const Aquecimento = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {warmupNumbers.map((number) => (
+                    {warmingNumbers.map((number) => (
                       <tr key={number.id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => copyToClipboard(number.number, `number-${number.id}`)}
+                            onClick={() => copyToClipboard(number.numero, `number-${number.id}`)}
                             className="text-green-600 hover:text-green-700"
                           >
                             {copiedStates[`number-${number.id}`] ? (
@@ -270,19 +184,20 @@ export const Aquecimento = () => {
                               <Phone className="h-4 w-4 text-green-400" />
                             </div>
                             <div>
-                              <span className="font-medium text-foreground">{number.number}</span>
+                              <span className="font-medium text-foreground">{number.numero}</span>
                               <p className="text-xs text-muted-foreground">{number.url}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-foreground">{number.description}</td>
+                        <td className="py-4 px-4 text-foreground">{number.descricao || '-'}</td>
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-2">
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => deleteNumber(number.id)}
+                              onClick={() => handleDeleteNumber(number.id)}
                               className="text-red-600 hover:text-red-700"
+                              disabled={loading}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -320,10 +235,10 @@ export const Aquecimento = () => {
               <Button 
                 onClick={handleSaveGroups}
                 className="bg-green-600 hover:bg-green-700"
-                disabled={!groupsText.trim()}
+                disabled={!groupsText.trim() || loading}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Salvar Links de Grupos
+                {loading ? 'Salvando...' : 'Salvar Links de Grupos'}
               </Button>
             </CardContent>
           </Card>
@@ -332,8 +247,8 @@ export const Aquecimento = () => {
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span className="text-foreground">Grupos Cadastrados ({warmupGroups.length})</span>
-                <Badge variant="secondary">{warmupGroups.length} grupos</Badge>
+                <span className="text-foreground">Grupos Cadastrados ({warmingGroups.length})</span>
+                <Badge variant="secondary">{warmingGroups.length} grupos</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -347,14 +262,14 @@ export const Aquecimento = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {warmupGroups.map((group) => (
+                    {warmingGroups.map((group) => (
                       <tr key={group.id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-3">
                             <div className="p-2 rounded-lg bg-blue-500/20">
                               <Users className="h-4 w-4 text-blue-400" />
                             </div>
-                            <span className="font-medium text-foreground">{group.name}</span>
+                            <span className="font-medium text-foreground">{group.nome}</span>
                           </div>
                         </td>
                         <td className="py-4 px-4">
@@ -373,8 +288,9 @@ export const Aquecimento = () => {
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => deleteGroup(group.id)}
+                              onClick={() => handleDeleteGroup(group.id)}
                               className="text-red-600 hover:text-red-700"
+                              disabled={loading}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
